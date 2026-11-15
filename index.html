@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#123b63">
+  <meta name="description" content="Issue Scanner สำหรับมือถือ สแกน Barcode ด้วยกล้องหรือ Bluetooth">
+  <title>Issue Scanner</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="logo">IS</div>
+    <div class="brand">
+      <h1>Issue Scanner</h1>
+      <p>Mobile · Camera + Bluetooth</p>
+    </div>
+    <button id="toggleSound" class="sound-btn" type="button" aria-label="เปิดหรือปิดเสียง"
+      title="เปิด/ปิดเสียงแจ้งเตือน">🔊 เสียง: เปิด</button>
+    <span id="networkState" class="network">กำลังตรวจสอบ</span>
+  </header>
+  <main class="container">
+    <section class="card">
+      <div class="heading">
+        <div>
+          <h2>รับข้อมูล Barcode</h2>
+          <p>เลือกใช้กล้อง หรือเครื่องสแกน Bluetooth</p>
+        </div>
+      </div>
+      <div class="mode-row">
+        <button id="focusScanner" class="mode active" type="button">Bluetooth / เครื่องยิง</button>
+        <button id="openCamera" class="mode" type="button">📷 กล้องมือถือ</button>
+      </div>
+      <label for="scanInput">ช่องรับ Barcode</label>
+      <div class="input-row">
+        <input id="scanInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+          placeholder="สแกนแล้วกด Enter" aria-label="ช่องรับ Barcode">
+        <button id="submitScan" class="primary" type="button">บันทึก</button>
+      </div>
+      <div class="actions">
+        <button id="stopCamera" class="soft" type="button" disabled>ปิดกล้อง</button>
+        <button id="clearInput" class="soft" type="button">ล้างช่อง</button>
+      </div>
+      <div id="cameraPanel" class="camera-panel" hidden>
+        <div class="video-wrapper">
+          <video id="cameraVideo" autoplay muted playsinline></video>
+          <div class="scan-guide"></div>
+        </div>
+        <div class="camera-controls">
+          <button id="triggerScanBtn" class="scan-trigger-btn" type="button">🎯 กดเพื่อสแกน</button>
+          <label class="auto-scan-toggle">
+            <input id="autoScanCheck" type="checkbox"> สแกนอัตโนมัติต่อเนื่อง
+          </label>
+        </div>
+        <div id="cameraStatus" class="camera-status">เล็งกล้องไปที่ Barcode แล้วกดปุ่ม "🎯 กดเพื่อสแกน"</div>
+      </div>
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      <div class="rules">
+        <b>เงื่อนไข Barcode ตามโปรเจกต์เดิม</b>
+        <ul>
+          <li>ใช้เครื่องหมาย <code>;</code> เป็นตัวคั่น และต้องมีอย่างน้อย 8 ช่อง</li>
+          <li>Part No. = ช่องที่ 1</li>
+          <li>Qty = ช่องที่ 5</li>
+          <li>ป้องกันการบันทึก Barcode เดิมซ้ำ</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><span>จำนวนสแกน</span><strong id="scanCount">0</strong></div>
+      <div class="stat"><span>Qty รวม</span><strong id="totalQty">0</strong></div>
+      <div class="stat"><span>Part No.</span><strong id="partCount">0</strong></div>
+    </section>
+
+
+    <section class="card">
+      <div class="heading">
+        <div>
+          <h2>Summary</h2>
+          <p>สรุปยอดตาม Part No. พร้อมสูตรจำนวน</p>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Part No.</th>
+              <th>Total Qty</th>
+              <th>Formula</th>
+            </tr>
+          </thead>
+          <tbody id="summaryBody">
+            <tr>
+              <td colspan="3" class="empty">ยังไม่มีข้อมูล</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="heading">
+        <div>
+          <h2>Scan List</h2>
+          <p>รายการล่าสุดอยู่ด้านบน</p>
+        </div><button id="exportCsv" class="outline" type="button">Export CSV</button>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Part No.</th>
+              <th>Qty</th>
+              <th>เวลา</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="scanBody">
+            <tr>
+              <td colspan="5" class="empty">ยังไม่มีข้อมูล</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+
+    <section class="card manage">
+      <div>
+        <h2>จัดการข้อมูล</h2>
+        <p>บันทึกในอุปกรณ์นี้เท่านั้น (Local Storage)</p>
+      </div>
+      <div class="actions">
+        <button id="exportJson" class="outline" type="button">สำรอง JSON</button>
+        <button id="importJson" class="outline" type="button">นำเข้า JSON</button>
+        <input id="importFile" type="file" accept=".json,application/json" hidden>
+        <button id="clearAll" class="danger" type="button">ล้างทั้งหมด</button>
+      </div>
+    </section>
+    <p class="footnote">Bluetooth scanner ส่วนใหญ่ทำงานแบบ Keyboard HID: จับคู่กับ Android แล้วสแกนลงช่อง Barcode
+      โดยตั้ง suffix เป็น Enter</p>
+  </main>
+  <footer>Issue Scanner · Mobile PWA · Offline ready</footer>
+
+  <!-- หน้าต่างป๊อปอัปแจ้งผลการสแกน (ผ่าน / ไม่ผ่าน) พร้อมปุ่ม OK -->
+  <div id="scanResultModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+    <div id="modalCard" class="modal-card">
+      <div id="modalIcon" class="modal-icon">✅</div>
+      <h3 id="modalTitle" class="modal-title">สแกนผ่าน</h3>
+      <div id="modalMessage" class="modal-message"></div>
+      <button id="modalOkBtn" class="modal-ok-btn" type="button">OK</button>
+    </div>
+  </div>
+
+  <!-- ไฟล์เสียงแจ้งเตือนในโปรเจกต์ -->
+  <audio id="sndClick" src="sounds/click.wav" preload="auto"></audio>
+  <audio id="sndSuccess" src="sounds/beep-success.wav" preload="auto"></audio>
+  <audio id="sndError" src="sounds/beep-error.wav" preload="auto"></audio>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
